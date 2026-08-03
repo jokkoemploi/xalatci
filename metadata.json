@@ -1,0 +1,6 @@
+{
+  "name": "XALAT-CI",
+  "description": "Plateforme citoyenne de signalement d'incidents et portail d'administration et de suivi des agents.",
+  "requestFramePermissions": ["camera", "geolocation"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
