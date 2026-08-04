@@ -89,7 +89,7 @@ const initialDraft: NewReportDraft = {
 
 export const useViewStore = create<ViewState>((set) => ({
   activePortal: 'mobile_citoyen',
-  mobileScreen: 8, // Start directly on Citizen Dashboard (Accueil) or allow quick screen jumping!
+  mobileScreen: 1, // Start with the onboarding/splash flow before login and dashboard access
   adminTab: 'dashboard',
   selectedIncidentId: 'inc-1',
   reportDraft: initialDraft,

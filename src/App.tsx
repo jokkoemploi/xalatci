@@ -89,7 +89,7 @@ function AppContent() {
 
       setPortal('mobile_citoyen');
       const routeMap: Record<string, number> = {
-        '/': 8,
+        '/': 1,
         '/dashboard': 8,
         '/login': 5,
         '/register': 6,
