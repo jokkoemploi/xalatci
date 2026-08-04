@@ -3,6 +3,7 @@ import { handleLocalBackendRequest } from '../lib/localBackend';
 
 const meta = import.meta as unknown as { env?: Record<string, string> };
 const baseURL = meta.env?.VITE_API_URL || meta.env?.NEXT_PUBLIC_API_URL || '/api';
+const useLocalFallback = Boolean(meta.env?.VITE_USE_LOCAL_BACKEND) || Boolean(meta.env?.DEV);
 
 export const apiClient = axios.create({
   baseURL,
@@ -25,6 +26,8 @@ apiClient.interceptors.request.use(
 
 apiClient.interceptors.response.use(
   async (response) => {
+    if (!useLocalFallback) return response;
+
     if (response?.data && typeof response.data === 'string' && response.data.includes('<!doctype html')) {
       const localResponse = await handleLocalBackendRequest({
         method: response.config.method || 'get',
@@ -34,11 +37,16 @@ apiClient.interceptors.response.use(
       });
       return { ...response, data: localResponse.data, status: localResponse.status };
     }
+
     return response;
   },
   async (error) => {
     if (error.response?.status === 401) {
       console.warn('Session expirée ou non autorisée.');
+    }
+
+    if (!useLocalFallback) {
+      return Promise.reject(error);
     }
 
     if (

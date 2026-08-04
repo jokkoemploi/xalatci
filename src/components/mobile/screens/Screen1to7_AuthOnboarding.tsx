@@ -203,12 +203,18 @@ export const Screen5_Connexion: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email.trim()) return;
-    login(email);
-    setMobileScreen(8);
+    setError(null);
+    try {
+      await login(email);
+      setMobileScreen(8);
+    } catch (err: any) {
+      setError(err?.response?.data?.message || err?.message || 'Impossible de se connecter.');
+    }
   };
 
   return (
@@ -277,6 +283,11 @@ export const Screen5_Connexion: React.FC = () => {
             </button>
           </div>
 
+          {error ? (
+            <div className="text-xs text-rose-600 bg-rose-50 border border-rose-100 rounded-[14px] p-3 mb-3">
+              {error}
+            </div>
+          ) : null}
           <button
             type="submit"
             className="w-full py-3.5 bg-[#1E5EFF] text-white font-bold rounded-[18px] shadow-md hover:bg-blue-700 transition text-sm"
@@ -309,12 +320,18 @@ export const Screen6_Inscription: React.FC = () => {
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [error, setError] = useState<string | null>(null);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim() || !email.trim() || !phone.trim()) return;
-    register(name, email, phone);
-    setMobileScreen(8);
+    setError(null);
+    try {
+      await register(name, email, phone);
+      setMobileScreen(8);
+    } catch (err: any) {
+      setError(err?.response?.data?.message || err?.message || 'Impossible de créer le compte.');
+    }
   };
 
   return (
@@ -331,6 +348,11 @@ export const Screen6_Inscription: React.FC = () => {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-3.5">
+          {error ? (
+            <div className="text-xs text-rose-600 bg-rose-50 border border-rose-100 rounded-[14px] p-3">
+              {error}
+            </div>
+          ) : null}
           <div>
             <label className="block text-xs font-semibold text-[#1F2937] mb-1">
               Nom complet

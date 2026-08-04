@@ -24,6 +24,36 @@ function sendJson(res: VercelResponse, status: number, data: unknown) {
   res.status(status).json(data);
 }
 
+function normalizeEmail(value: unknown) {
+  return String(value ?? '').trim().toLowerCase();
+}
+
+function normalizePhone(value: unknown) {
+  const raw = String(value ?? '').trim();
+  if (!raw) return '';
+  const digits = raw.replace(/[^+\d]/g, '');
+  if (digits.startsWith('00221')) return `+${digits.slice(2)}`;
+  if (digits.startsWith('221') && !digits.startsWith('+')) return `+${digits}`;
+  return digits;
+}
+
+function buildAuthToken(userId: string) {
+  return `xalat_ci_token:${userId}`;
+}
+
+function getUserIdFromToken(token: string | undefined) {
+  if (!token) return null;
+  const trimmed = String(token).trim();
+  if (!trimmed.startsWith('xalat_ci_token:')) return null;
+  return trimmed.replace('xalat_ci_token:', '').trim() || null;
+}
+
+function getTokenFromRequest(req: VercelRequest) {
+  const authHeader = String(req.headers.authorization || '');
+  if (!authHeader) return null;
+  return authHeader.replace(/^Bearer\s+/i, '').trim() || null;
+}
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   const path = getPath(req);
 
@@ -35,17 +65,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const rawIdentifier = String(getBody(req)?.email || getBody(req)?.phone || '').trim();
     if (!rawIdentifier) return sendJson(res, 400, { message: 'Email ou téléphone requis' });
 
-    const identifier = rawIdentifier.toLowerCase();
+    const isEmail = rawIdentifier.includes('@');
+    const email = normalizeEmail(rawIdentifier);
+    const phone = normalizePhone(rawIdentifier);
+
     const user = await prisma.user.findFirst({
-      where: identifier.includes('@')
-        ? { email: identifier }
-        : { phone: rawIdentifier }
+      where: isEmail ? { email } : { phone }
     });
 
     if (!user) return sendJson(res, 404, { message: 'Compte introuvable. Vérifiez votre email ou téléphone.' });
 
     return sendJson(res, 200, {
-      token: 'mock_jwt_token_for_vercel',
+      token: buildAuthToken(user.id),
       user: { ...user, stats: { totalReports: 0, resolvedCount: 0, inProgressCount: 0, pendingCount: 0, badgesCount: 0 } },
     });
   }
@@ -53,8 +84,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method === 'POST' && path === 'auth/register') {
     const { name, email, phone, commune } = getBody(req);
     const safeName = String(name || '').trim();
-    const safeEmail = String(email || '').trim().toLowerCase();
-    const safePhone = String(phone || '').trim();
+    const safeEmail = normalizeEmail(email);
+    const safePhone = normalizePhone(phone);
 
     if (!safeName || !safeEmail || !safePhone) {
       return sendJson(res, 400, { message: 'Nom, email et téléphone sont requis.' });
@@ -87,7 +118,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     });
 
     return sendJson(res, 201, {
-      token: 'mock_jwt_token_for_vercel',
+      token: buildAuthToken(newUser.id),
       user: { ...newUser, stats: { totalReports: 0, resolvedCount: 0, inProgressCount: 0, pendingCount: 0, badgesCount: 0 } },
     });
   }
@@ -97,8 +128,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   if (req.method === 'GET' && path === 'auth/me') {
-    const user = await prisma.user.findFirst({ orderBy: { createdAt: 'desc' } });
-    if (!user) return sendJson(res, 404, { message: 'Aucun utilisateur enregistré.' });
+    const token = getTokenFromRequest(req);
+    const userId = getUserIdFromToken(token || undefined);
+
+    if (!userId) {
+      return sendJson(res, 401, { message: 'Token invalide ou expiré.' });
+    }
+
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (!user) return sendJson(res, 404, { message: 'Utilisateur introuvable.' });
+
     return sendJson(res, 200, { ...user, stats: { totalReports: 0, resolvedCount: 0, inProgressCount: 0, pendingCount: 0, badgesCount: 0 } });
   }
 

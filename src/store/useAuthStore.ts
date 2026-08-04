@@ -26,8 +26,9 @@ export const useAuthStore = create<AuthState>((set) => ({
       set({ user: res.user, isAuthenticated: true, isLoading: false });
       eventBus.emit('LOGIN_SUCCESS', res.user);
       eventBus.emit('USER_UPDATED', res.user);
-    } catch {
+    } catch (error) {
       set({ isLoading: false });
+      throw error;
     }
   },
 
@@ -37,8 +38,10 @@ export const useAuthStore = create<AuthState>((set) => ({
       const res = await authService.register({ name, email, phone });
       set({ user: res.user, isAuthenticated: true, isLoading: false });
       eventBus.emit('LOGIN_SUCCESS', res.user);
-    } catch {
+      return res.user;
+    } catch (error) {
       set({ isLoading: false });
+      throw error;
     }
   },
 
