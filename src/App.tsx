@@ -18,9 +18,41 @@ const queryClient = new QueryClient({
 });
 
 function AppContent() {
-  const { activePortal, setPortal, setMobileScreen, setAdminTab } = useViewStore();
+  const { activePortal, selectedIncidentId, setPortal, setMobileScreen, setAdminTab } = useViewStore();
   const { theme } = useThemeStore();
   const { isOnline } = useNetworkStatus();
+
+  const screenToPath = (screen: number, incidentId?: string | null) => {
+    switch (screen) {
+      case 1: return '/';
+      case 2: return '/onboarding-1';
+      case 3: return '/onboarding-2';
+      case 4: return '/onboarding-3';
+      case 5: return '/login';
+      case 6: return '/register';
+      case 7: return '/forgot-password';
+      case 8: return '/dashboard';
+      case 9: return '/map';
+      case 10: return '/report';
+      case 11: return '/camera';
+      case 12: return '/report/category';
+      case 13: return '/report/location';
+      case 14: return '/report/details';
+      case 15: return '/report/confirm';
+      case 16: return '/signalements';
+      case 17: return incidentId ? `/incident/${incidentId}` : '/signalements';
+      case 18: return incidentId ? `/incident/${incidentId}/follow-up` : '/signalements';
+      case 19: return '/notifications';
+      case 20: return '/messages';
+      case 21: return '/badges';
+      case 22: return '/profile';
+      case 23: return '/settings';
+      case 24: return '/history';
+      case 25: return '/about';
+      case 26: return '/theme';
+      default: return '/dashboard';
+    }
+  };
 
   useEffect(() => {
     document.documentElement.classList.remove('dark');
@@ -42,27 +74,71 @@ function AppContent() {
         else if (path === '/admin/map') setAdminTab('map_heatmap');
         else if (path === '/admin/settings') setAdminTab('settings');
         else setAdminTab('dashboard');
-      } else {
-        setPortal('mobile_citoyen');
-        if (path === '/login') setMobileScreen(5);
-        else if (path === '/register') setMobileScreen(6);
-        else if (path === '/map') setMobileScreen(9);
-        else if (path === '/report') setMobileScreen(10);
-        else if (path === '/history') setMobileScreen(24);
-        else if (path === '/profile') setMobileScreen(22);
-        else if (path === '/settings') setMobileScreen(23);
-        else if (path === '/notifications') setMobileScreen(19);
-        else if (path === '/messages') setMobileScreen(20);
-        else if (path === '/about') setMobileScreen(25);
-        else if (path === '/badges') setMobileScreen(21);
-        else if (path === '/dashboard') setMobileScreen(8);
+        return;
       }
+
+      setPortal('mobile_citoyen');
+      const routeMap: Record<string, number> = {
+        '/': 8,
+        '/dashboard': 8,
+        '/login': 5,
+        '/register': 6,
+        '/forgot-password': 7,
+        '/map': 9,
+        '/report': 10,
+        '/camera': 11,
+        '/report/category': 12,
+        '/report/location': 13,
+        '/report/details': 14,
+        '/report/confirm': 15,
+        '/signalements': 16,
+        '/notifications': 19,
+        '/messages': 20,
+        '/badges': 21,
+        '/profile': 22,
+        '/settings': 23,
+        '/history': 24,
+        '/about': 25,
+        '/theme': 26,
+      };
+
+      const match = Object.entries(routeMap).find(([route]) => route === path);
+      if (match) {
+        setMobileScreen(match[1] as number);
+        return;
+      }
+
+      if (path.startsWith('/incident/')) {
+        const incidentId = path.split('/')[2];
+        if (incidentId) {
+          setMobileScreen(17);
+          return;
+        }
+      }
+
+      if (path.startsWith('/incident/') && path.includes('/follow-up')) {
+        setMobileScreen(18);
+        return;
+      }
+
+      setMobileScreen(8);
     };
 
     syncRouteFromPath();
     window.addEventListener('popstate', syncRouteFromPath);
     return () => window.removeEventListener('popstate', syncRouteFromPath);
   }, [setPortal, setMobileScreen, setAdminTab]);
+
+  useEffect(() => {
+    if (activePortal !== 'mobile_citoyen') return;
+
+    const targetPath = screenToPath((useViewStore.getState() as any).mobileScreen, selectedIncidentId);
+    const currentPath = window.location.pathname.toLowerCase();
+
+    if (currentPath !== targetPath) {
+      window.history.pushState({}, '', targetPath);
+    }
+  }, [activePortal, mobileScreen, selectedIncidentId]);
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] font-sans transition-colors duration-200 relative">
