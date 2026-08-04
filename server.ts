@@ -120,8 +120,17 @@ app.post("/api/auth/forgot-password", (req, res) => {
   res.json({ success: true, message: "Un lien de réinitialisation a été envoyé par SMS / Email (+221)." });
 });
 
-app.get("/api/auth/me", (req, res) => {
-  res.json(usersSeed[0]);
+app.get("/api/auth/me", async (req, res) => {
+  const user = await prisma.user.findFirst({
+    orderBy: { createdAt: 'desc' }
+  });
+
+  if (!user) return res.status(404).json({ message: 'Aucun utilisateur enregistré.' });
+
+  res.json({
+    ...user,
+    stats: { totalReports: 0, resolvedCount: 0, inProgressCount: 0, pendingCount: 0, badgesCount: 0 }
+  });
 });
 
 // 2. Incidents
@@ -312,14 +321,29 @@ app.get("/api/badges", (req, res) => {
 });
 
 // 7. Profile & User info
-app.get("/api/profile", (req, res) => {
-  res.json(usersSeed[0]);
+app.get("/api/profile", async (req, res) => {
+  const user = await prisma.user.findFirst({ orderBy: { createdAt: 'desc' } });
+  if (!user) return res.status(404).json({ message: 'Aucun utilisateur enregistré.' });
+
+  res.json({
+    ...user,
+    stats: { totalReports: 0, resolvedCount: 0, inProgressCount: 0, pendingCount: 0, badgesCount: 0 }
+  });
 });
 
-app.put("/api/profile", (req, res) => {
-  const body = req.body;
-  usersSeed[0] = { ...usersSeed[0], ...body };
-  res.json(usersSeed[0]);
+app.put("/api/profile", async (req, res) => {
+  const user = await prisma.user.findFirst({ orderBy: { createdAt: 'desc' } });
+  if (!user) return res.status(404).json({ message: 'Aucun utilisateur enregistré.' });
+
+  const updated = await prisma.user.update({
+    where: { id: user.id },
+    data: req.body
+  });
+
+  res.json({
+    ...updated,
+    stats: { totalReports: 0, resolvedCount: 0, inProgressCount: 0, pendingCount: 0, badgesCount: 0 }
+  });
 });
 
 // 8. History / Activity Logs
