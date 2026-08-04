@@ -38,7 +38,6 @@ export const useAuthStore = create<AuthState>((set) => ({
       const res = await authService.register({ name, email, phone });
       set({ user: res.user, isAuthenticated: true, isLoading: false });
       eventBus.emit('LOGIN_SUCCESS', res.user);
-      return res.user;
     } catch (error) {
       set({ isLoading: false });
       throw error;

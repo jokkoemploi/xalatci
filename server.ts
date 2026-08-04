@@ -47,13 +47,12 @@ app.post("/api/auth/login", async (req, res) => {
     return res.status(400).json({ message: 'Email ou téléphone requis' });
   }
 
-  const identifier = rawIdentifier.toLowerCase();
-  const isEmail = identifier.includes('@');
+  const isEmail = rawIdentifier.includes('@');
+  const email = String(rawIdentifier).trim().toLowerCase();
+  const phone = String(rawIdentifier).trim().replace(/[^+\d]/g, '');
 
   const user = await prisma.user.findFirst({
-    where: isEmail
-      ? { email: identifier }
-      : { phone: rawIdentifier }
+    where: isEmail ? { email } : { phone }
   });
 
   if (!user) {
@@ -61,7 +60,7 @@ app.post("/api/auth/login", async (req, res) => {
   }
 
   return res.json({
-    token: "jwt_token_xalat_ci_mock_2026",
+    token: `xalat_ci_token:${user.id}`,
     user: {
       ...user,
       stats: { totalReports: 0, resolvedCount: 0, inProgressCount: 0, pendingCount: 0, badgesCount: 0 }
@@ -72,7 +71,7 @@ app.post("/api/auth/login", async (req, res) => {
 app.post("/api/auth/register", async (req, res) => {
   const rawName = String(req.body?.name || '').trim();
   const email = String(req.body?.email || '').trim().toLowerCase();
-  const phone = String(req.body?.phone || '').trim();
+  const phone = String(req.body?.phone || '').trim().replace(/[^+\d]/g, '');
   const commune = String(req.body?.commune || 'Dakar Plateau, Dakar').trim();
 
   if (!rawName || !email || !phone) {
@@ -108,7 +107,7 @@ app.post("/api/auth/register", async (req, res) => {
   });
 
   return res.status(201).json({
-    token: "jwt_token_xalat_ci_mock_2026",
+    token: `xalat_ci_token:${newUser.id}`,
     user: {
       ...newUser,
       stats: { totalReports: 0, resolvedCount: 0, inProgressCount: 0, pendingCount: 0, badgesCount: 0 }
@@ -121,11 +120,15 @@ app.post("/api/auth/forgot-password", (req, res) => {
 });
 
 app.get("/api/auth/me", async (req, res) => {
-  const user = await prisma.user.findFirst({
-    orderBy: { createdAt: 'desc' }
-  });
+  const authHeader = String(req.headers.authorization || '');
+  const token = authHeader.replace(/^Bearer\s+/i, '').trim();
+  const userId = token.startsWith('xalat_ci_token:') ? token.replace('xalat_ci_token:', '').trim() : null;
 
-  if (!user) return res.status(404).json({ message: 'Aucun utilisateur enregistré.' });
+  if (!userId) return res.status(401).json({ message: 'Token invalide ou expiré.' });
+
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+
+  if (!user) return res.status(404).json({ message: 'Utilisateur introuvable.' });
 
   res.json({
     ...user,
