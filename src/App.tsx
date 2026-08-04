@@ -18,7 +18,15 @@ const queryClient = new QueryClient({
 });
 
 function AppContent() {
-  const { activePortal, selectedIncidentId, setPortal, setMobileScreen, setAdminTab } = useViewStore();
+  const {
+    activePortal,
+    mobileScreen,
+    selectedIncidentId,
+    setPortal,
+    setMobileScreen,
+    setSelectedIncidentId,
+    setAdminTab,
+  } = useViewStore();
   const { theme } = useThemeStore();
   const { isOnline } = useNetworkStatus();
 
@@ -60,6 +68,8 @@ function AppContent() {
 
   // Real URL path synchronization
   useEffect(() => {
+    if (typeof window === 'undefined') return;
+
     const syncRouteFromPath = () => {
       const path = window.location.pathname.toLowerCase();
 
@@ -102,22 +112,17 @@ function AppContent() {
         '/theme': 26,
       };
 
-      const match = Object.entries(routeMap).find(([route]) => route === path);
-      if (match) {
-        setMobileScreen(match[1] as number);
+      const directMatch = Object.entries(routeMap).find(([route]) => route === path);
+      if (directMatch) {
+        setMobileScreen(directMatch[1] as number);
         return;
       }
 
-      if (path.startsWith('/incident/')) {
-        const incidentId = path.split('/')[2];
-        if (incidentId) {
-          setMobileScreen(17);
-          return;
-        }
-      }
-
-      if (path.startsWith('/incident/') && path.includes('/follow-up')) {
-        setMobileScreen(18);
+      const incidentMatch = path.match(/^\/incident\/([^/]+)(?:\/follow-up)?$/);
+      if (incidentMatch) {
+        const incidentId = incidentMatch[1];
+        setSelectedIncidentId(incidentId);
+        setMobileScreen(path.includes('/follow-up') ? 18 : 17);
         return;
       }
 
@@ -127,16 +132,16 @@ function AppContent() {
     syncRouteFromPath();
     window.addEventListener('popstate', syncRouteFromPath);
     return () => window.removeEventListener('popstate', syncRouteFromPath);
-  }, [setPortal, setMobileScreen, setAdminTab]);
+  }, [setPortal, setMobileScreen, setSelectedIncidentId, setAdminTab]);
 
   useEffect(() => {
-    if (activePortal !== 'mobile_citoyen') return;
+    if (typeof window === 'undefined' || activePortal !== 'mobile_citoyen') return;
 
-    const targetPath = screenToPath((useViewStore.getState() as any).mobileScreen, selectedIncidentId);
+    const targetPath = screenToPath(mobileScreen, selectedIncidentId);
     const currentPath = window.location.pathname.toLowerCase();
 
     if (currentPath !== targetPath) {
-      window.history.pushState({}, '', targetPath);
+      window.history.replaceState({}, '', targetPath);
     }
   }, [activePortal, mobileScreen, selectedIncidentId]);
 
