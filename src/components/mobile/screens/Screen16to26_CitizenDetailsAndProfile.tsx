@@ -510,15 +510,15 @@ export const Screen22_Profil: React.FC = () => {
         {/* Stats */}
         <div className="grid grid-cols-3 gap-3 mb-6">
           <div className="bg-white p-3 rounded-[18px] text-center border border-[#E5E7EB]">
-            <span className="font-black text-lg text-[#1F2937]">{user?.stats.totalReports}</span>
+            <span className="font-black text-lg text-[#1F2937]">{user?.stats?.totalReports ?? 0}</span>
             <p className="text-[10px] font-semibold text-slate-400">Signalements</p>
           </div>
           <div className="bg-white p-3 rounded-[18px] text-center border border-[#E5E7EB]">
-            <span className="font-black text-lg text-[#34A853]">{user?.stats.resolvedCount}</span>
+            <span className="font-black text-lg text-[#34A853]">{user?.stats?.resolvedCount ?? 0}</span>
             <p className="text-[10px] font-semibold text-slate-400">Résolus</p>
           </div>
           <div className="bg-white p-3 rounded-[18px] text-center border border-[#E5E7EB]">
-            <span className="font-black text-lg text-[#F59E0B]">{user?.stats.badgesCount}</span>
+            <span className="font-black text-lg text-[#F59E0B]">{user?.stats?.badgesCount ?? 0}</span>
             <p className="text-[10px] font-semibold text-slate-400">Badges</p>
           </div>
         </div>
