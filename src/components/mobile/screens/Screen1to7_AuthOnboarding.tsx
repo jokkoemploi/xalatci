@@ -200,12 +200,13 @@ export const Screen4_Onboarding3: React.FC = () => {
 export const Screen5_Connexion: React.FC = () => {
   const { setMobileScreen } = useViewStore();
   const { login } = useAuthStore();
-  const [email, setEmail] = useState('ousmane.diallo@xalat.sn');
-  const [password, setPassword] = useState('password123');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!email.trim()) return;
     login(email);
     setMobileScreen(8);
   };
@@ -311,7 +312,8 @@ export const Screen6_Inscription: React.FC = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    register(name || 'Nouveau Citoyen', email, phone);
+    if (!name.trim() || !email.trim() || !phone.trim()) return;
+    register(name, email, phone);
     setMobileScreen(8);
   };
 
@@ -375,7 +377,7 @@ export const Screen6_Inscription: React.FC = () => {
                 onChange={(e) => setEmail(e.target.value)}
                 required
                 className="w-full pl-10 pr-4 py-2.5 bg-white rounded-[14px] border border-[#E5E7EB] text-xs text-[#1F2937] focus:ring-2 focus:ring-[#1E5EFF]"
-                placeholder="ousmane.diallo@xalat.sn"
+                placeholder="nom@exemple.sn"
               />
             </div>
           </div>

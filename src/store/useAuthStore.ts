@@ -15,24 +15,8 @@ interface AuthState {
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
-  user: {
-    id: "usr-1",
-    name: "Ousmane Diallo",
-    email: "ousmane.diallo@xalat.sn",
-    phone: "+221 77 123 45 67",
-    role: "citoyen",
-    avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=250",
-    commune: "Dakar Plateau, Dakar",
-    badgeTitle: "Citoyen Ambassadeur",
-    stats: {
-      totalReports: 12,
-      resolvedCount: 8,
-      inProgressCount: 3,
-      pendingCount: 1,
-      badgesCount: 4,
-    }
-  },
-  isAuthenticated: true,
+  user: null,
+  isAuthenticated: false,
   isLoading: false,
 
   login: async (email: string) => {

@@ -74,13 +74,13 @@ interface ViewState {
 }
 
 const initialDraft: NewReportDraft = {
-  photoUrl: 'https://images.unsplash.com/photo-1515162816999-a0c47dc192f7?auto=format&fit=crop&q=80&w=600',
-  category: 'Routes & Voirie',
+  photoUrl: '',
+  category: '',
   location: {
-    address: 'Avenue Lamine Guèye, Dakar Plateau, Dakar',
-    lat: 14.6710,
-    lng: -17.4380,
-    commune: 'Dakar Plateau'
+    address: '',
+    lat: 0,
+    lng: 0,
+    commune: ''
   },
   title: '',
   description: '',
@@ -91,7 +91,7 @@ export const useViewStore = create<ViewState>((set) => ({
   activePortal: 'mobile_citoyen',
   mobileScreen: 1, // Start with the onboarding/splash flow before login and dashboard access
   adminTab: 'dashboard',
-  selectedIncidentId: 'inc-1',
+  selectedIncidentId: null,
   reportDraft: initialDraft,
 
   setPortal: (activePortal) => set({ activePortal }),
