@@ -352,21 +352,21 @@ app.post("/api/incidents", (req, res) => {
   const count = incidentsSeed.length + 1;
   const refNum = String(count).padStart(3, '0');
   
-  const newIncident = {
+  const newIncident: any = {
     id: `inc-${Date.now()}`,
     reference: `SN-DK-2026-${refNum}`,
-    title: body.title || "Signalement Citoyen",
-    description: body.description || "Aucune description fournie.",
-    category: body.category || "Routes & Voirie",
-    urgency: body.urgency || "Moyenne",
+    title: String(body.title || "Signalement Citoyen"),
+    description: String(body.description || "Aucune description fournie."),
+    category: String(body.category || "Routes & Voirie"),
+    urgency: String(body.urgency || "Moyenne"),
     status: "En attente" as const,
     location: {
-      address: body.location?.address || "Commune de Dakar",
-      lat: body.location?.lat || 14.6937,
-      lng: body.location?.lng || -17.4441,
-      commune: body.location?.commune || "Dakar"
+      address: String(body.location?.address || "Commune de Dakar"),
+      lat: Number(body.location?.lat ?? 14.6937),
+      lng: Number(body.location?.lng ?? -17.4441),
+      commune: String(body.location?.commune || "Dakar")
     },
-    photoUrl: body.photoUrl || "https://images.unsplash.com/photo-1515162816999-a0c47dc192f7?auto=format&fit=crop&q=80&w=600",
+    photoUrl: String(body.photoUrl || "https://images.unsplash.com/photo-1515162816999-a0c47dc192f7?auto=format&fit=crop&q=80&w=600"),
     reporterId: "usr-1",
     reporterName: "Ousmane Diallo",
     reporterPhone: "+221 77 123 45 67",
