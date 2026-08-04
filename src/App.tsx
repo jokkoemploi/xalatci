@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useViewStore } from './store/useViewStore';
 import { useThemeStore } from './store/useThemeStore';
+import { useAuthStore } from './store/useAuthStore';
 import { MobileAppContainer } from './components/mobile/MobileAppContainer';
 import { AdminPortal } from './components/admin/AdminPortal';
 import { ErrorBoundary } from './components/common/ErrorBoundary';
@@ -62,9 +63,21 @@ function AppContent() {
     }
   };
 
+  const { fetchUser } = useAuthStore();
+
   useEffect(() => {
     document.documentElement.classList.remove('dark');
   }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const token = localStorage.getItem('xalat_token');
+    if (!token) return;
+
+    fetchUser().catch(() => {
+      localStorage.removeItem('xalat_token');
+    });
+  }, [fetchUser]);
 
   // Real URL path synchronization
   useEffect(() => {

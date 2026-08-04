@@ -89,8 +89,8 @@ export const MobileAppContainer: React.FC = () => {
     }
   };
 
-  // Hide bottom tab bar on auth / full camera screens
-  const hideBottomBar = [1, 2, 3, 4, 5, 6, 7, 11].includes(mobileScreen);
+  // Hide bottom tab bar on auth / full camera screens, and when the user is redirected to login from a protected route.
+  const hideBottomBar = [1, 2, 3, 4, 5, 6, 7, 11].includes(mobileScreen) || (!isAuthenticated && mobileScreen >= 8);
 
   return (
     <div className="min-h-screen w-full bg-[#F8FAFC] flex flex-col justify-between items-center">
