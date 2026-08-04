@@ -1,7 +1,9 @@
 import express from "express";
 import path from "path";
+import { PrismaClient } from '@prisma/client';
 import { createServer as createViteServer } from "vite";
 
+const prisma = new PrismaClient();
 const app = express();
 const PORT = 3000;
 
@@ -39,31 +41,79 @@ app.get("/api/regions", (req, res) => {
 });
 
 // 1. Auth & Session
-app.post("/api/auth/login", (req, res) => {
-  const { email } = req.body;
-  const user = usersSeed.find(u => u.email === email) || usersSeed[0];
-  res.json({
+app.post("/api/auth/login", async (req, res) => {
+  const rawIdentifier = String(req.body?.email || req.body?.phone || '').trim();
+  if (!rawIdentifier) {
+    return res.status(400).json({ message: 'Email ou téléphone requis' });
+  }
+
+  const identifier = rawIdentifier.toLowerCase();
+  const isEmail = identifier.includes('@');
+
+  const user = await prisma.user.findFirst({
+    where: isEmail
+      ? { email: identifier }
+      : { phone: rawIdentifier }
+  });
+
+  if (!user) {
+    return res.status(404).json({ message: 'Compte introuvable. Vérifiez votre email ou téléphone.' });
+  }
+
+  return res.json({
     token: "jwt_token_xalat_ci_mock_2026",
-    user
+    user: {
+      ...user,
+      stats: { totalReports: 0, resolvedCount: 0, inProgressCount: 0, pendingCount: 0, badgesCount: 0 }
+    }
   });
 });
 
-app.post("/api/auth/register", (req, res) => {
-  const { name, email, phone, commune } = req.body;
-  const newUser = {
-    id: `usr-${Date.now()}`,
-    name: name || "Nouveau Citoyen",
-    email: email || "citoyen@xalat.sn",
-    phone: phone || "+221 77 000 00 00",
-    role: "citoyen" as const,
-    status: "actif" as const,
-    avatar: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=250",
-    commune: commune || "Dakar Plateau, Dakar",
-    badgeTitle: "Citoyen Nouveau",
-    stats: { totalReports: 0, resolvedCount: 0, inProgressCount: 0, pendingCount: 0, badgesCount: 1 }
-  };
-  usersSeed.push(newUser);
-  res.status(201).json({ token: "jwt_token_xalat_ci_mock_2026", user: newUser });
+app.post("/api/auth/register", async (req, res) => {
+  const rawName = String(req.body?.name || '').trim();
+  const email = String(req.body?.email || '').trim().toLowerCase();
+  const phone = String(req.body?.phone || '').trim();
+  const commune = String(req.body?.commune || 'Dakar Plateau, Dakar').trim();
+
+  if (!rawName || !email || !phone) {
+    return res.status(400).json({ message: 'Nom, email et téléphone sont requis.' });
+  }
+
+  const existing = await prisma.user.findFirst({
+    where: {
+      OR: [
+        { email },
+        { phone }
+      ]
+    }
+  });
+
+  if (existing) {
+    return res.status(409).json({
+      message: 'Un compte existe déjà avec ce mail ou ce numéro de téléphone.'
+    });
+  }
+
+  const newUser = await prisma.user.create({
+    data: {
+      name: rawName,
+      email,
+      phone,
+      role: 'citoyen',
+      status: 'actif',
+      avatar: '',
+      commune,
+      badgeTitle: 'Citoyen Nouveau',
+    }
+  });
+
+  return res.status(201).json({
+    token: "jwt_token_xalat_ci_mock_2026",
+    user: {
+      ...newUser,
+      stats: { totalReports: 0, resolvedCount: 0, inProgressCount: 0, pendingCount: 0, badgesCount: 0 }
+    }
+  });
 });
 
 app.post("/api/auth/forgot-password", (req, res) => {

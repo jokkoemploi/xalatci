@@ -64,7 +64,7 @@ export const Screen8_AccueilDashboard: React.FC = () => {
             <div>
               <p className="text-[11px] font-semibold text-slate-400">Bonjour 👋</p>
               <h3 className="font-bold text-base text-[#1F2937] leading-tight">
-                {user?.name || "Citoyen Sénégalais"}
+                {user?.name || "Utilisateur XALAT"}
               </h3>
             </div>
           </div>

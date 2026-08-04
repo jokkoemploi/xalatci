@@ -29,29 +29,64 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   if (req.method === 'POST' && path === 'auth/login') {
-    const { email } = getBody(req);
-    if (!email) return sendJson(res, 400, { message: 'Email requis' });
+    const rawIdentifier = String(getBody(req)?.email || getBody(req)?.phone || '').trim();
+    if (!rawIdentifier) return sendJson(res, 400, { message: 'Email ou téléphone requis' });
 
-    const user = usersSeed.find((u) => u.email === email) ?? usersSeed[0];
-    return sendJson(res, 200, { token: 'mock_jwt_token_for_vercel', user });
+    const identifier = rawIdentifier.toLowerCase();
+    const user = await prisma.user.findFirst({
+      where: identifier.includes('@')
+        ? { email: identifier }
+        : { phone: rawIdentifier }
+    });
+
+    if (!user) return sendJson(res, 404, { message: 'Compte introuvable. Vérifiez votre email ou téléphone.' });
+
+    return sendJson(res, 200, {
+      token: 'mock_jwt_token_for_vercel',
+      user: { ...user, stats: { totalReports: 0, resolvedCount: 0, inProgressCount: 0, pendingCount: 0, badgesCount: 0 } },
+    });
   }
 
   if (req.method === 'POST' && path === 'auth/register') {
     const { name, email, phone, commune } = getBody(req);
-    const newUser = {
-      id: `usr-${Date.now()}`,
-      name: name || 'Nouveau Citoyen',
-      email: email || 'citoyen@xalat.sn',
-      phone: phone || '+221 77 000 00 00',
-      role: 'citoyen',
-      status: 'actif',
-      avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=250',
-      commune: commune || 'Dakar Plateau, Dakar',
-      badgeTitle: 'Citoyen Nouveau',
-      stats: { totalReports: 0, resolvedCount: 0, inProgressCount: 0, pendingCount: 0, badgesCount: 1 },
-    };
-    usersSeed.unshift(newUser);
-    return sendJson(res, 201, { token: 'mock_jwt_token_for_vercel', user: newUser });
+    const safeName = String(name || '').trim();
+    const safeEmail = String(email || '').trim().toLowerCase();
+    const safePhone = String(phone || '').trim();
+
+    if (!safeName || !safeEmail || !safePhone) {
+      return sendJson(res, 400, { message: 'Nom, email et téléphone sont requis.' });
+    }
+
+    const existing = await prisma.user.findFirst({
+      where: {
+        OR: [
+          { email: safeEmail },
+          { phone: safePhone }
+        ]
+      }
+    });
+
+    if (existing) {
+      return sendJson(res, 409, { message: 'Un compte existe déjà avec ce mail ou ce numéro de téléphone.' });
+    }
+
+    const newUser = await prisma.user.create({
+      data: {
+        name: safeName,
+        email: safeEmail,
+        phone: safePhone,
+        role: 'citoyen',
+        status: 'actif',
+        avatar: '',
+        commune: String(commune || 'Dakar Plateau, Dakar').trim(),
+        badgeTitle: 'Citoyen Nouveau',
+      }
+    });
+
+    return sendJson(res, 201, {
+      token: 'mock_jwt_token_for_vercel',
+      user: { ...newUser, stats: { totalReports: 0, resolvedCount: 0, inProgressCount: 0, pendingCount: 0, badgesCount: 0 } },
+    });
   }
 
   if (req.method === 'POST' && path === 'auth/forgot-password') {
@@ -59,7 +94,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   if (req.method === 'GET' && path === 'auth/me') {
-    return sendJson(res, 200, usersSeed[0]);
+    const user = await prisma.user.findFirst({ orderBy: { createdAt: 'desc' } });
+    if (!user) return sendJson(res, 404, { message: 'Aucun utilisateur enregistré.' });
+    return sendJson(res, 200, { ...user, stats: { totalReports: 0, resolvedCount: 0, inProgressCount: 0, pendingCount: 0, badgesCount: 0 } });
   }
 
   if (req.method === 'GET' && path === 'incidents') {
